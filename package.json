@@ -1,0 +1,14 @@
+   {
+       "name": "cse340-practice-binene",
+       "dependencies": {
+           "express": "^5.2.1"
+       },
+       "devDependencies": {
+           "nodemon": "^3.1.14"
+       },
+       "type": "module",
+       "scripts": {
+           "dev": "nodemon --env-file=.env server.js",
+           "start": "node server.js"
+       }
+   }
