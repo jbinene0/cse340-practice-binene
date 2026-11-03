@@ -17,6 +17,16 @@
             </div>
         </div>
 
+        <% if (???) { %>
+            <div class="sort-message">
+                <p>Currently sorted by: <%= ??? %></p>
+            </div>
+        <% } else { %>
+            <div class="sort-message">
+                <p>No sorting applied, using default sorting by time.</p>
+            </div>
+        <% } %>
+
         <div class="section-list">
             <% course.sections.forEach(section => { %>
                 <div class="section-card">
