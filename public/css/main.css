@@ -52,3 +52,19 @@ body {
         padding: 0;
     }
 }
+
+.error-img {
+    display: block;
+    max-width: 400px;   /* adjust to taste */
+    width: 100%;        /* shrinks on small screens */
+    height: auto;       /* keeps proportions */
+    margin: 1.5rem 0;   /* use 1.5rem auto to center it */
+    border-radius: 8px;
+}
+
+.error-links a {
+    color: #1a4d8f;
+    text-decoration: underline;
+    font-weight: normal;
+    margin-right: 1rem;
+}

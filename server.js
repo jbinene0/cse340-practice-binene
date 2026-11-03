@@ -13,6 +13,63 @@ const __dirname = path.dirname(__filename);
 const NODE_ENV = process.env.NODE_ENV || 'production';
 const PORT = process.env.PORT || 3000;
 
+// Course data - place this after imports, before routes
+const courses = {
+    'CS121': {
+        id: 'CS121',
+        title: 'Introduction to Programming',
+        description: 'Learn programming fundamentals using JavaScript and basic web development concepts.',
+        credits: 3,
+        sections: [
+            { time: '9:00 AM', room: 'STC 392', professor: 'Brother Jack' },
+            { time: '2:00 PM', room: 'STC 394', professor: 'Sister Enkey' },
+            { time: '11:00 AM', room: 'STC 390', professor: 'Brother Keers' }
+        ]
+    },
+    'MATH110': {
+        id: 'MATH110',
+        title: 'College Algebra',
+        description: 'Fundamental algebraic concepts including functions, graphing, and problem solving.',
+        credits: 4,
+        sections: [
+            { time: '8:00 AM', room: 'MC 301', professor: 'Sister Anderson' },
+            { time: '1:00 PM', room: 'MC 305', professor: 'Brother Miller' },
+            { time: '3:00 PM', room: 'MC 307', professor: 'Brother Thompson' }
+        ]
+    },
+    'ENG101': {
+        id: 'ENG101',
+        title: 'Academic Writing',
+        description: 'Develop writing skills for academic and professional communication.',
+        credits: 3,
+        sections: [
+            { time: '10:00 AM', room: 'GEB 201', professor: 'Sister Anderson' },
+            { time: '12:00 PM', room: 'GEB 205', professor: 'Brother Davis' },
+            { time: '4:00 PM', room: 'GEB 203', professor: 'Sister Enkey' }
+        ]
+    },
+    'HIST101': {
+        id: 'HIST101',
+        title: 'World History',
+        description: 'Survey of major civilizations, events, and turning points in world history.',
+        credits: 3, 
+        sections: [
+            {time: '9:00 AM', room: 'ROM 210', professor: 'Brother Hansen'},
+            {time: '1:00 PM', room: 'ROM 212', professor: 'Sister Lopez'}
+        ]
+    },
+    'BIOL150':{
+        id: 'BIOL150',
+        title: 'Introduction to Biology',
+        description : 'Core concepts of cells, genetics, evolution, and ecosystems.',
+        credits: 4, 
+        sections: [
+            {time: '8:00 AM', room: 'Ben 101', professor: 'Sister Carter'},
+            {time: '11"00 AM', room: 'Ben 105', professor: 'Brother Young'},
+        ]
+    }
+};
+
 /**
  * Setup Express Server
  */
@@ -67,6 +124,123 @@ app.get('/new-route', (req, res) => {
     res.send('This is a new route!');
 });
 
+// Course catalog list page
+app.get('/catalog', (req, res) => {
+    res.render('catalog', {
+        title: 'Course Catalog',
+        courses: courses
+    });
+});
+
+// Redirect to a random course
+app.get('/catalog/random', (req, res) => {
+    const ids = Object.keys(courses);
+    const randomId = ids[Math.floor(Math.random() * ids.length)];
+    res.redirect(`/catalog/${randomId}`);
+});
+
+// Enhanced course detail route with sorting
+app.get('/catalog/:courseId', (req, res, next) => {
+    const courseId = req.params.courseId;
+
+    const validPattern = /^[A-Z]+\d+$/;
+    if (!validPattern.test(courseId)){
+        const err = new Error(`Invalid course ID format: ${courseId}`);
+        err.status = 404
+        return next(err);
+    }
+
+    const course = Object.hasOwn(courses, courseId) ? courses[courseId] : null;
+    if (!course) {
+        const err = new Error(`Course ${courseId} not found`);
+        err.status = 404;
+        return next(err);
+    }
+
+    // Get sort parameter (default to 'time')
+    const sortBy = req.query.sort || 'time';
+
+    // Create a copy of sections to sort
+    let sortedSections = [...course.sections];
+
+    // Sort based on the parameter
+    switch (sortBy) {
+        case 'professor':
+            sortedSections.sort((a, b) => a.professor.localeCompare(b.professor));
+            break;
+        case 'room':
+            sortedSections.sort((a, b) => a.room.localeCompare(b.room));
+            break;
+        case 'time':
+        default:
+            // Keep original time order as default
+            break;
+    }
+
+    console.log(`Viewing course: ${courseId}, sorted by: ${sortBy}`);
+
+    res.render('course-detail', {
+        title: `${course.id} - ${course.title}`,
+        course: { ...course, sections: sortedSections },
+        currentSort: sortBy
+    });
+});
+
+// Test route for 500 errors
+app.get('/test-error', (req, res, next) => {
+    const err = new Error('This is a test error');
+    err.status = 500;
+    next(err);
+});
+
+// Catch-all route for 404 errors
+app.use((req, res, next) => {
+    const err = new Error('Page Not Found');
+    err.status = 404;
+    next(err);
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+    // Prevent infinite loops, if a response has already been sent, do nothing
+    if (res.headersSent || res.finished) {
+        return next(err);
+    }
+
+    // Determine status and template
+    const status = err.status || 500;
+    const template = status === 404 ? '404' : '500';
+
+    // Detailed error logging
+    console.error({
+        time: new Date().toISOString(),
+        status, 
+        method: req.method, 
+        url: req.originalUrl, 
+        ip: req.ip,
+        useragent: req.get('User-Agent'),
+        message: err.message
+    })
+
+    // Prepare data for the template
+    const context = {
+        title: status === 404 ? 'Page Not Found' : 'Error ${status}',
+        error: NODE_ENV === 'production' ? 'An error occurred' : err.message,
+        stack: NODE_ENV === 'production' ? null : err.stack,
+        NODE_ENV // Our WebSocket check needs this and its convenient to pass along
+    };
+
+    // Render the appropriate error template with fallback
+    try {
+        res.status(status).render(`errors/${template}`, context);
+    } catch (renderErr) {
+        // If rendering fails, send a simple error page instead
+        if (!res.headersSent) {
+            res.status(status).send(`<h1>Error ${status}</h1><p>An error occurred.</p>`);
+        }
+    }
+});
+
 // When in development mode, start a WebSocket server for live reloading
 if (NODE_ENV.includes('dev')) {
     const ws = await import('ws');
@@ -91,4 +265,3 @@ if (NODE_ENV.includes('dev')) {
 app.listen(PORT, () => {
     console.log(`Server is running on http://127.0.0.1:${PORT}`)
 });
-
