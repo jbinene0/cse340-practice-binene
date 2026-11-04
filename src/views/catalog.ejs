@@ -2,7 +2,12 @@
 <main>
     <h1>Course Catalog</h1>
     <p>Browse our available courses and click on any course to see detailed information including available sections and instructors.</p>
-
+    <div class="sort-options">
+        <span>Filter by credits: </span>
+        <a href="/catalog" class="<%= currentCredits === 'all' ? 'active' : '' %>">all</a>
+        <a href="/catalog?credits=3" class="<%= currentCredits === '3' ? 'active' : '' %>">3 credits</a>
+        <a href="/catalog?credits=4" class="<%= currentCredits === '4' ? 'active' : '' %>">4 credits</a>
+    </div>
     <div class="course-list">
         <% Object.values(courses).forEach(course => { %>
             <div class="course-card">

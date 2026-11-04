@@ -17,9 +17,9 @@
             </div>
         </div>
 
-        <% if (???) { %>
+        <% if (queryParams) { %>
             <div class="sort-message">
-                <p>Currently sorted by: <%= ??? %></p>
+                <p>Currently sorted by: <%= queryParams.sort %></p>
             </div>
         <% } else { %>
             <div class="sort-message">

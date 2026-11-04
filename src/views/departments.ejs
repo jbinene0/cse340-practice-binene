@@ -1,0 +1,16 @@
+<%- include('partials/header') %>
+<main>
+    <h1> Courses by Department</h1>
+    <% Object.keys(departments).forEach(department => { %>
+         <h2><%= department %></h2>
+         <div class="course-list">
+            <% departments[department].forEach(course => { %>
+                <div class="course-card">
+                    <h3><a href="/catalog/<%= course.id %>"><%= course.title %></a></h3>
+                    <p class="course-id"><%= course.id %> &bull; <%= course.credits %> credits</p>
+                </div>
+            <%}); %>
+         </div>
+    <%}); %>
+</main>
+<%- include('partials/footer') %>

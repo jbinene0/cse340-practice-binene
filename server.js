@@ -1,290 +1,46 @@
-// Imports
-import express from 'express'
-import { fileURLToPath } from 'url';
+import express from 'express';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-const name = process.env.NAME; // <-- NEW
+// Import MVC components
+import routes from './src/controllers/routes.js';
+import { addLocalVariables } from './src/middleware/global.js';
 
 /**
- * Declare Important Variables
+ * Server configuration
  */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const NODE_ENV = process.env.NODE_ENV || 'production';
+const NODE_ENV = process.env.NODE_ENV?.toLowerCase() || 'production';
 const PORT = process.env.PORT || 3000;
-
-// Course data - place this after imports, before routes
-const courses = {
-    'CS121': {
-        id: 'CS121',
-        title: 'Introduction to Programming',
-        description: 'Learn programming fundamentals using JavaScript and basic web development concepts.',
-        credits: 3,
-        sections: [
-            { time: '9:00 AM', room: 'STC 392', professor: 'Brother Jack' },
-            { time: '2:00 PM', room: 'STC 394', professor: 'Sister Enkey' },
-            { time: '11:00 AM', room: 'STC 390', professor: 'Brother Keers' }
-        ]
-    },
-    'MATH110': {
-        id: 'MATH110',
-        title: 'College Algebra',
-        description: 'Fundamental algebraic concepts including functions, graphing, and problem solving.',
-        credits: 4,
-        sections: [
-            { time: '8:00 AM', room: 'MC 301', professor: 'Sister Anderson' },
-            { time: '1:00 PM', room: 'MC 305', professor: 'Brother Miller' },
-            { time: '3:00 PM', room: 'MC 307', professor: 'Brother Thompson' }
-        ]
-    },
-    'ENG101': {
-        id: 'ENG101',
-        title: 'Academic Writing',
-        description: 'Develop writing skills for academic and professional communication.',
-        credits: 3,
-        sections: [
-            { time: '10:00 AM', room: 'GEB 201', professor: 'Sister Anderson' },
-            { time: '12:00 PM', room: 'GEB 205', professor: 'Brother Davis' },
-            { time: '4:00 PM', room: 'GEB 203', professor: 'Sister Enkey' }
-        ]
-    },
-    'HIST101': {
-        id: 'HIST101',
-        title: 'World History',
-        description: 'Survey of major civilizations, events, and turning points in world history.',
-        credits: 3, 
-        sections: [
-            {time: '9:00 AM', room: 'ROM 210', professor: 'Brother Hansen'},
-            {time: '1:00 PM', room: 'ROM 212', professor: 'Sister Lopez'}
-        ]
-    },
-    'BIOL150':{
-        id: 'BIOL150',
-        title: 'Introduction to Biology',
-        description : 'Core concepts of cells, genetics, evolution, and ecosystems.',
-        credits: 4, 
-        sections: [
-            {time: '8:00 AM', room: 'Ben 101', professor: 'Sister Carter'},
-            {time: '11:00 AM', room: 'Ben 105', professor: 'Brother Young'},
-        ]
-    }
-};
 
 /**
  * Setup Express Server
  */
 const app = express();
-app.disable('x-powered-by');
 
 /**
- * Configure Express middleware
+ * Configure Express
  */
-
-// Serve static files from the public directory
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Set EJS as the templating engine
 app.set('view engine', 'ejs');
-
-// Tell Express where to find your templates
 app.set('views', path.join(__dirname, 'src/views'));
 
 /**
- * Global template variables middleware
- * 
- * Makes common variables available to all EJS templates without having to pass
- * them individually from each route handler
+ * Global Middleware
  */
-app.use((req, res, next) => {
-    // Make NODE_ENV available to all templates
-    res.locals.NODE_ENV = NODE_ENV.toLowerCase() || 'production';
-
-    // Continue to the next middleware or route handler
-    next();
-});
-
-app.use((req, res, next) => {
-    // Skip logging for routes that start with /. (like /.well-known/)
-    if (!req.path.startsWith('/.')) {
-        console.log(`${req.method} ${req.url}`);
-    }
-    next(); // Pass control to the next middleware or route
-});
-
-// Middleware to add global data to all templates
-app.use((req, res, next) => {
-    // Add current year for copyright
-    res.locals.currentYear = new Date().getFullYear();
-
-    next();
-});
-
-// Global middleware for time-based greeting
-app.use((req, res, next) => {
-    const currentHour = new Date().getHours();
-
-    /**
-     * Create logic to set different greetings based on the current hour.
-     * Use res.locals.greeting to store the greeting message.
-     * Hint: morning (before 12), afternoon (12-17), evening (after 17)
-     */
-    if (currentHour < 12) {
-        res.locals.greeting = '<p>Good morning!</p>';
-    } else if (currentHour <17) {
-        res.locals.greeting = '<p>Good afternoon!</p>';
-    } else {
-        res.locals.greeting = '<p>Good evening!</p>';
-    }
-
-    next();
-});
-
-// Global middleware for seasonal greeting
-app.use((req, res, next) => {
-    const month = new Date().getMonth(); // 0 = January, 11 = December
-
-    if (month === 11 || month <= 1) {
-        res.locals.seasonalGreeting = 'Stay warm this winter!';
-    } else if (month <= 4) {
-        res.locals.seasonalGreeting = 'Happy spring!';
-    } else if (month <= 7) {
-        res.locals.seasonalGreeting = 'Enjoy the summer!';
-    } else {
-        res.locals.seasonalGreeting = 'Happy fall!';
-    }
-
-    next();
-});
-
-// Global middleware for random theme selection
-app.use((req, res, next) => {
-    const themes = ['blue-theme', 'green-theme', 'red-theme', 'purple-theme', 'yellow-theme', 'gray-theme'];
-
-    // Your task: Pick a random theme from the array
-    const randomTheme = themes[Math.floor(Math.random() * themes.length)];
-    res.locals.bodyClass = randomTheme;
-
-    next();
-});
-
-// Global middleware to share query parameters with templates
-app.use((req, res, next) => {
-    // Make req.query available to all templates for debugging and conditional rendering
-    res.locals.queryParams = req.query || {};
-
-    next();
-});
+app.use(addLocalVariables);
 
 /**
  * Routes
  */
-app.get('/', (req, res) => {
-    const title = 'Welcome Home';
-    res.render('home', { title });
-});
+app.use('/', routes);
 
-app.get('/about', (req, res) => {
-    const title = 'About Me';
-    res.render('about', { title });
-});
+/**
+ * Error Handling
+ */
 
-app.get('/products', (req, res) => {
-    const title = 'Our Products';
-    res.render('products', { title });
-});
-
-app.get('/new-route', (req, res) => {
-    res.send('This is a new route!');
-});
-
-// Course catalog list page
-app.get('/catalog', (req, res) => {
-    res.render('catalog', {
-        title: 'Course Catalog',
-        courses: courses
-    });
-});
-
-// Redirect to a random course
-app.get('/catalog/random', (req, res) => {
-    const ids = Object.keys(courses);
-    const randomId = ids[Math.floor(Math.random() * ids.length)];
-    res.redirect(`/catalog/${randomId}`);
-});
-
-// Enhanced course detail route with sorting
-app.get('/catalog/:courseId', (req, res, next) => {
-    const courseId = req.params.courseId;
-
-    const validPattern = /^[A-Z]+\d+$/;
-    if (!validPattern.test(courseId)){
-        const err = new Error(`Invalid course ID format: ${courseId}`);
-        err.status = 404
-        return next(err);
-    }
-
-    const course = Object.hasOwn(courses, courseId) ? courses[courseId] : null;
-    if (!course) {
-        const err = new Error(`Course ${courseId} not found`);
-        err.status = 404;
-        return next(err);
-    }
-
-    // Get sort parameter (default to 'time')
-    const sortBy = req.query.sort || 'time';
-
-    // Create a copy of sections to sort
-    let sortedSections = [...course.sections];
-
-    // Sort based on the parameter
-    switch (sortBy) {
-        case 'professor':
-            sortedSections.sort((a, b) => a.professor.localeCompare(b.professor));
-            break;
-        case 'room':
-            sortedSections.sort((a, b) => a.room.localeCompare(b.room));
-            break;
-        case 'time':
-        default:
-            // Keep original time order as default
-            break;
-    }
-
-    console.log(`Viewing course: ${courseId}, sorted by: ${sortBy}`);
-
-    res.render('course-detail', {
-        title: `${course.id} - ${course.title}`,
-        course: { ...course, sections: sortedSections },
-        currentSort: sortBy
-    });
-});
-
-// Route-specific middleware that sets custom headers
-const addDemoHeaders = (req, res, next) => {
-    // Your task: Set custom headers using res.setHeader()
-    // Add a header called 'X-Demo-Page' with value 'true'
-    // Add a header called 'X-Middleware-Demo' with any message you want
-    res.setHeader('X-Demo-Page', 'true');
-    res.setHeader('X-Middleware-Demo', 'Headers added by route-specific middleware');
-
-    next();
-};
-
-// Demo page route with header middleware
-app.get('/demo', addDemoHeaders, (req, res) => {
-    res.render('demo', {
-        title: 'Middleware Demo Page'
-    });
-});
-
-// Test route for 500 errors
-app.get('/test-error', (req, res, next) => {
-    const err = new Error('This is a test error');
-    err.status = 500;
-    next(err);
-});
-
-// Catch-all route for 404 errors
+// 404 handler
 app.use((req, res, next) => {
     const err = new Error('Page Not Found');
     err.status = 404;
@@ -302,20 +58,9 @@ app.use((err, req, res, next) => {
     const status = err.status || 500;
     const template = status === 404 ? '404' : '500';
 
-    // Detailed error logging
-    console.error({
-        time: new Date().toISOString(),
-        status, 
-        method: req.method, 
-        url: req.originalUrl, 
-        ip: req.ip,
-        useragent: req.get('User-Agent'),
-        message: err.message
-    })
-
     // Prepare data for the template
     const context = {
-        title: status === 404 ? 'Page Not Found' : `Error ${status}`,
+        title: status === 404 ? 'Page Not Found' : 'Server Error',
         error: NODE_ENV === 'production' ? 'An error occurred' : err.message,
         stack: NODE_ENV === 'production' ? null : err.stack,
         NODE_ENV // Our WebSocket check needs this and its convenient to pass along
@@ -332,7 +77,9 @@ app.use((err, req, res, next) => {
     }
 });
 
-// When in development mode, start a WebSocket server for live reloading
+/**
+ * Start WebSocket Server in Development Mode; used for live reloading
+ */
 if (NODE_ENV.includes('dev')) {
     const ws = await import('ws');
 
@@ -352,7 +99,9 @@ if (NODE_ENV.includes('dev')) {
     }
 }
 
-// Start the server and listen on the specified port
+/**
+ * Start Server
+ */
 app.listen(PORT, () => {
-    console.log(`Server is running on http://127.0.0.1:${PORT}`)
+    console.log(`Server is running on http://127.0.0.1:${PORT}`);
 });
