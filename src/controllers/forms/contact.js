@@ -15,31 +15,27 @@ const showContactForm = (req, res) => {
 
 /**
  * Handle contact form submission with validation.
- * If validation passes, save to database and redirect.
- * If validation fails, log errors and redirect back to form.
+ * Validation errors and results are shown to the user via flash messages.
  */
 const handleContactSubmission = async (req, res) => {
-    // Check for validation errors
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
-        // Log validation errors for developer debugging
-        console.error('Validation errors:', errors.array());
-        // Redirect back to form without saving
+        // Store each validation error as a separate flash message
+        errors.array().forEach(error => {
+            req.flash('error', error.msg);
+        });
         return res.redirect('/contact');
     }
 
-    // Extract validated data
-    const { subject, message } = req.body;
-
     try {
-        // Save to database
+        const { subject, message } = req.body;
         await createContactForm(subject, message);
-        console.log('Contact form submitted successfully');
-        // Redirect to responses page on success
-        res.redirect('/contact/responses');
+        req.flash('success', 'Thank you for contacting us! We will respond soon.');
+        res.redirect('/contact');
     } catch (error) {
         console.error('Error saving contact form:', error);
+        req.flash('error', 'Unable to submit your message. Please try again later.');
         res.redirect('/contact');
     }
 };
@@ -82,7 +78,6 @@ router.post('/',
             .withMessage('Message must be at least 10 characters')
     ],
     handleContactSubmission
-    
 );
 
 /**

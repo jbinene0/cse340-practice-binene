@@ -20,7 +20,7 @@ const registrationValidation = [
         .withMessage('Must be a valid email address'),
     body('emailConfirm')
         .trim()
-        .normalizeEmail()
+        .normalizeEmail() // Normalize like email, so matching emails aren't rejected
         .custom((value, { req }) => value === req.body.email)
         .withMessage('Email addresses must match'),
     body('password')
@@ -48,16 +48,16 @@ const showRegistrationForm = (req, res) => {
  * Handle user registration with validation and password hashing.
  */
 const processRegistration = async (req, res) => {
-    // Check for validation errors
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
-        // Log validation errors for debugging (messages only, never passwords)
-        console.error('Validation errors:', errors.array().map(error => error.msg));
+        // Show each validation error to the user (messages only, never submitted values)
+        errors.array().forEach(error => {
+            req.flash('error', error.msg);
+        });
         return res.redirect('/register');
     }
 
-    // Extract validated data from request body
     const { name, email, password } = req.body;
 
     try {
@@ -65,7 +65,7 @@ const processRegistration = async (req, res) => {
         const alreadyRegistered = await emailExists(email);
 
         if (alreadyRegistered) {
-            console.log('Email already registered');
+            req.flash('warning', 'An account with that email already exists. Try logging in instead.');
             return res.redirect('/register');
         }
 
@@ -74,12 +74,12 @@ const processRegistration = async (req, res) => {
 
         // Save user to database with hashed password
         await saveUser(name, email, hashedPassword);
-        console.log('User registered successfully');
 
-        // NOTE: Later when we add authentication, we'll change this to require login first
-        res.redirect('/register/list');
+        req.flash('success', 'Registration successful! Please log in with your new account.');
+        res.redirect('/login');
     } catch (error) {
         console.error('Error registering user:', error.message);
+        req.flash('error', 'Unable to complete registration. Please try again later.');
         res.redirect('/register');
     }
 };
