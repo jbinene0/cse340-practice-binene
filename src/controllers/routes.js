@@ -2,10 +2,25 @@ import { Router } from 'express';
 
 import { addDemoHeaders } from '../middleware/demo/headers.js';
 import { catalogPage, courseDetailPage } from './catalog/catalog.js';
+import { facultyListPage, facultyDetailPage } from './faculty/faculty.js';
 import { homePage, aboutPage, demoPage, testErrorPage } from './index.js';
-import { facultyDetailPage, facultyListPage } from './faculty/faculty.js';
+
 // Create a new router instance
 const router = Router();
+
+/**
+ * Router-level middleware: section-specific styles.
+ * Must be registered before the route definitions to run for them.
+ */
+router.use('/catalog', (req, res, next) => {
+    res.addStyle('<link rel="stylesheet" href="/css/catalog.css">');
+    next();
+});
+
+router.use('/faculty', (req, res, next) => {
+    res.addStyle('<link rel="stylesheet" href="/css/faculty.css">');
+    next();
+});
 
 // Home and basic pages
 router.get('/', homePage);
@@ -14,7 +29,6 @@ router.get('/about', aboutPage);
 // Course catalog routes
 router.get('/catalog', catalogPage);
 router.get('/catalog/:slugId', courseDetailPage);
-// router.get('/departments', departmentsPage)
 
 // Faculty directory routes
 router.get('/faculty', facultyListPage);
