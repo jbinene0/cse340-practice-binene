@@ -6,6 +6,9 @@ import { facultyListPage, facultyDetailPage } from './faculty/faculty.js';
 import { homePage, aboutPage, demoPage, testErrorPage } from './index.js';
 import contactRoutes from './forms/contact.js';
 import registrationRoutes from './forms/registration.js';
+import loginRoutes from './forms/login.js';
+import { processLogout, showDashboard } from './forms/login.js';
+import { requireLogin } from '../middleware/auth.js';
 
 // Create a new router instance
 const router = Router();
@@ -27,6 +30,12 @@ router.use('/faculty', (req, res, next) => {
 // Home and basic pages
 router.get('/', homePage);
 router.get('/about', aboutPage);
+
+// Add login-specific styles to all login routes
+router.use('/login', (req, res, next) => {
+    res.addStyle('<link rel="stylesheet" href="/css/login.css">');
+    next();
+});
 
 // Add contact-specific styles to all contact routes
 router.use('/contact', (req, res, next) => {
@@ -53,5 +62,12 @@ router.use('/contact', contactRoutes);
 
 // Registration routes
 router.use('/register', registrationRoutes);
+
+// Login routes (form and submission)
+router.use('/login', loginRoutes);
+
+// Authentication-related routes at root level
+router.get('/logout', processLogout);
+router.get('/dashboard', requireLogin, showDashboard);
 
 export default router;
