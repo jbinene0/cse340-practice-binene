@@ -4,6 +4,8 @@ import { addDemoHeaders } from '../middleware/demo/headers.js';
 import { catalogPage, courseDetailPage } from './catalog/catalog.js';
 import { facultyListPage, facultyDetailPage } from './faculty/faculty.js';
 import { homePage, aboutPage, demoPage, testErrorPage } from './index.js';
+import contactRoutes from './forms/contact.js';
+import registrationRoutes from './forms/registration.js';
 
 // Create a new router instance
 const router = Router();
@@ -26,6 +28,12 @@ router.use('/faculty', (req, res, next) => {
 router.get('/', homePage);
 router.get('/about', aboutPage);
 
+// Add contact-specific styles to all contact routes
+router.use('/contact', (req, res, next) => {
+    res.addStyle('<link rel="stylesheet" href="/css/contact.css">');
+    next();
+});
+
 // Course catalog routes
 router.get('/catalog', catalogPage);
 router.get('/catalog/:slugId', courseDetailPage);
@@ -39,5 +47,11 @@ router.get('/demo', addDemoHeaders, demoPage);
 
 // Route to trigger a test error
 router.get('/test-error', testErrorPage);
+
+// Contact form routes
+router.use('/contact', contactRoutes);
+
+// Registration routes
+router.use('/register', registrationRoutes);
 
 export default router;
