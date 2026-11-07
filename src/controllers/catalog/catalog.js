@@ -1,46 +1,37 @@
-import { getCourseById, getSortedSections, getCoursesByDepartment, getCoursesByCredits } from '../../models/catalog/catalog.js';
+import { getAllCourses, getCourseBySlug } from '../../models/catalog/courses.js';
+import { getSectionsByCourseSlug } from '../../models/catalog/catalog.js';
 
-// Route handler for the course catalog list page, with optional credit filter
-const catalogPage = (req, res) => {
-    const credits = req.query.credits;
-    const courses = getCoursesByCredits(credits);
+// Route handler for the course catalog list page
+const catalogPage = async (req, res) => {
+    const courses = await getAllCourses();
 
     res.render('catalog', {
         title: 'Course Catalog',
-        courses: courses,
-        currentCredits: credits || 'all'
+        courses: courses
     });
 };
 
 // Route handler for individual course detail pages
-const courseDetailPage = (req, res, next) => {
-    const courseId = req.params.courseId;
-    const course = getCourseById(courseId);
+const courseDetailPage = async (req, res, next) => {
+    const courseSlug = req.params.slugId;
+    const course = await getCourseBySlug(courseSlug);
 
-    if (!course) {
-        const err = new Error(`Course ${courseId} not found`);
+    // Model returns an empty object {} when the course isn't found
+    if (Object.keys(course).length === 0) {
+        const err = new Error(`Course ${courseSlug} not found`);
         err.status = 404;
         return next(err);
     }
 
     const sortBy = req.query.sort || 'time';
-    const sortedSections = getSortedSections(course.sections, sortBy);
+    const sections = await getSectionsByCourseSlug(courseSlug, sortBy);
 
     res.render('course-detail', {
-        title: `${course.id} - ${course.title}`,
-        course: { ...course, sections: sortedSections },
+        title: `${course.courseCode} - ${course.name}`,
+        course: course,
+        sections: sections,
         currentSort: sortBy
     });
 };
 
-// Route handler for courses grouped by department
-const departmentsPage = (req, res) => {
-    const departments = getCoursesByDepartment();
-
-    res.render('departments', {
-        title: 'Courses by Department',
-        departments: departments
-    });
-};
-
-export { catalogPage, courseDetailPage, departmentsPage };
+export { catalogPage, courseDetailPage };
